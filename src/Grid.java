@@ -1,4 +1,6 @@
 import javax.swing.*;
+import javax.swing.border.Border;
+
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -11,21 +13,22 @@ import java.awt.event.KeyListener;
     - the user's render distance
     - the size of the squares on the grid
 
-    As of now, I am having an issue with 2 JLabels being
-    displayed, when only 1 should be displayed at the
-    bottom of the window. The second one appears at the
-    top of the window for some reason.
+    CURRENT ISSUES:
 
-    This could be an issue with the layout, but I have not 
-    had any success in trying to implement an alternative
-    layout.
+    Trying to figure out how to piece each panel together
+    in a way that looks good and is functional. When using
+    JSliders on the same frame as the grid, the 
+    KeyListeners get crossed and do not target the grid.
+
+    Also running into same issue where JLabels are being 
+    displayed twice for some reason.
 */
 
 public class Grid extends JPanel implements KeyListener{
 
     public static int xPos;
     public static int yPos;
-    public static JLabel data;
+    public static JLabel coords;
     /* xPos and yPos hold the x and y coords of the square
        on the board in which the player is located.
 
@@ -39,6 +42,8 @@ public class Grid extends JPanel implements KeyListener{
       
 
     public void paintComponent(Graphics g) {
+
+        
 
         //draw grid lines
         for(int x = 30; x <= 630; x+= 30) {
@@ -93,7 +98,7 @@ public class Grid extends JPanel implements KeyListener{
                 yPos += 30;
         }
 
-        data.setText("xPos: " + xPos + "   yPos: " + yPos);
+        coords.setText("xPos: " + xPos + "   yPos: " + yPos);
         repaint();
     }
 
@@ -109,27 +114,69 @@ public class Grid extends JPanel implements KeyListener{
         
     }
 
+    public static void createWindow(JFrame frame) {
+
+        // create panel to hold everything
+        JPanel all = new JPanel();
+        GridLayout layout = new GridLayout(1, 1, 15, 20);
+        all.setLayout(layout);
+        
+        /*
+
+        // create top panel to hold tools
+        JPanel toolbox = new JPanel();
+        toolbox.setLayout(new FlowLayout());
+
+        JLabel rDistLabel = new JLabel("Render Distance");
+        toolbox.add(rDistLabel);
+        JSlider rDist = new JSlider(JSlider.HORIZONTAL, 1, 8, 3);
+        rDist.setMajorTickSpacing(1);
+        rDist.setPaintTicks(true);
+        rDist.setPaintLabels(true);
+        toolbox.add(rDist);
+        
+        JLabel boxSizeLabel = new JLabel("Box Size (px)");
+        toolbox.add(boxSizeLabel);
+        JSlider boxSize = new JSlider(JSlider.HORIZONTAL, 10, 60, 30);
+        boxSize.setMajorTickSpacing(10);
+        boxSize.setMinorTickSpacing(5);
+        boxSize.setPaintTicks(true);
+        boxSize.setPaintLabels(true);
+        toolbox.add(boxSize);
+
+        */
+
+        // create grid for bottom panel 
+        Grid grid = new Grid();
+        coords = new JLabel();
+        coords.setText("xPos: " + xPos + "   yPos: " + yPos);
+        coords.setPreferredSize(new Dimension(20, 50));
+        Border border = BorderFactory.createLineBorder(Color.BLACK);
+        coords.setBorder(border);
+
+        //all.add(coords);
+        all.add(grid);
+
+        frame.setSize(700, 1000);
+        frame.addKeyListener(grid);
+        frame.setContentPane(all);
+        frame.setVisible(true);
+    }
+
 
     public static void main(String[] args) throws Exception {
-        JFrame frame = new JFrame("Pretty Picture");
-        BorderLayout layout = new BorderLayout();
-        frame.setLayout(layout);
+        JFrame frame = new JFrame("Map Application");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
+        
         // set initial player position
         xPos = 150; yPos = 150;
-
-        Grid grid = new Grid();
-        data = new JLabel();
         
-        data.setText("xPos: " + xPos + "   yPos: " + yPos);
+        createWindow(frame);
+        
 
 
-        frame.setSize(700, 700);
-        frame.add(grid, BorderLayout.CENTER);
-        frame.add(data, BorderLayout.SOUTH);
-        frame.addKeyListener(grid);
-        frame.setVisible(true);
+        
 
     }
 
