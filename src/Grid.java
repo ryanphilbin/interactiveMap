@@ -15,58 +15,72 @@ import java.awt.event.KeyListener;
 
     CURRENT ISSUES:
 
-    Trying to figure out how to piece each panel together
-    in a way that looks good and is functional. When using
-    JSliders on the same frame as the grid, the 
-    KeyListeners get crossed and do not target the grid.
+    Some boxSize's work better than others. Since it will
+    be dependent on user choice, only offer boxSize options 
+    in the toolbox that work well with program.
 
-    Also running into same issue where JLabels are being 
-    displayed twice for some reason.
+    Next time, build start screen that gives allows user
+    to manipulate boxSize, renderDist, and gridSize. Then, 
+    on button click, paint the grid and allow user
+    interaction.
 */
 
 public class Grid extends JPanel implements KeyListener{
 
+    // user coordinates
     public static int xPos;
     public static int yPos;
+
+    // grid info
+    public static int boxSize = 30; // creates boxes w/ size (30px x 30px)
+    public static int renderDist = 4; // creates radius of (renderDist) squares
+    public static int gridSize = 14; // creates grid with (gridSize x gridSize) squares
+    public static final int bound = boxSize * gridSize; // max x or y value for squares to be drawn
+
+    // uhh
     public static JLabel coords;
+    public static JPanel panel;
+
     /* xPos and yPos hold the x and y coords of the square
        on the board in which the player is located.
 
        The bounds are
-            30 <= x <= 600
-            30 <= y <= 600
+            boxSize <= x <= bound
+            boxSize <= y <= bound
         
-        xPos and yPos must ALWAYS be multiples of 30 since 
-        each square on the grid is 30px x 30px.
+        xPos and yPos must ALWAYS be multiples of (boxSize) since 
+        each square on the grid is (boxSize)px x (boxSize)px.
     */
       
 
     public void paintComponent(Graphics g) {
 
-        
-
         //draw grid lines
-        for(int x = 30; x <= 630; x+= 30) {
-            g.drawLine(x,30,x,630);
+        for(int x = boxSize; x <= (bound + boxSize); x+= boxSize) {
+            g.drawLine(x, boxSize, x, (bound + boxSize));
         }
-        for(int y = 30; y <= 630; y += 30) {
-            g.drawLine(30,y,630,y);
+        for(int y = boxSize; y <= (bound + boxSize); y += boxSize) {
+            g.drawLine(boxSize, y, (bound + boxSize), y);
         }
 
         // draw rectangles
-        for(int x = 30; x <= 600; x += 30) {
-            for(int y = 30; y <= 600; y += 30) {
+        for(int x = boxSize; x <= bound; x += boxSize) {
+            for(int y = boxSize; y <= bound; y += boxSize) {
+
                 if(shaded(x, y)){
                     g.setColor(Color.RED);
                 } 
                 else g.setColor(Color.WHITE);
-                g.fillRect(x+1,y+1,29,29);
+                    
+                g.fillRect(x+1, y+1, boxSize-2, boxSize-2);
 
-                if(x == xPos && y == yPos){
-                    g.setColor(Color.black);
-                    g.fillOval(x+10, y+3, 10, 10);
-                    g.fillRect(x+7, y+12, 17, 15); 
-                }
+                //if(x == xPos && y == yPos){
+                    // draw player marker on top of red square
+                    g.setColor(Color.BLACK);
+                    //g.fillOval(x+(boxSize/3), y+3, (boxSize/3), (boxSize/3));
+                    //g.fillRect(x+(boxSize/4), y+12, (boxSize/2)+1, (boxSize/2)); 
+                    g.fillOval(xPos+(boxSize/4), yPos+(boxSize/4), boxSize/2, boxSize/2);
+                //}
                 
             }
         }
@@ -76,26 +90,34 @@ public class Grid extends JPanel implements KeyListener{
         // this method determines wether a box needs to be shaded or not
         int xDist = Math.abs(xPos - x);
         int yDist = Math.abs(yPos - y);
-        if(xDist <= 60 && yDist <= 60) return true;
-        else if(xDist <= 90 && yDist <=30) return true;
-        else if(xDist <= 30 && yDist <= 90) return true;
+
+        // going to use pythagorean to determine whether shading is needed
+        xDist = xDist / boxSize; // conv xDist from 'px' to 'squares'
+        xDist = xDist * xDist;   // square
+        yDist = yDist / boxSize;
+        yDist = yDist * yDist;
+        double total = (double)xDist + (double)yDist; // calculate a^2 + b^2
+        total = Math.sqrt(total); // square root
+
+        if(total <= renderDist) return true;
         else return false;
+
     }
 
     @Override
     public void keyPressed(KeyEvent e) {
         if(e.getKeyCode() == KeyEvent.VK_RIGHT) {
-            if(xPos < 600)
-                xPos += 30;
+            if(xPos < bound)
+                xPos += boxSize;
         }else if (e.getKeyCode() == KeyEvent.VK_LEFT){
-            if(xPos > 30)
-                xPos -= 30;
+            if(xPos > boxSize)
+                xPos -= boxSize;
         }else if (e.getKeyCode() == KeyEvent.VK_UP){
-            if(yPos > 30)
-                yPos -= 30;
+            if(yPos > boxSize)
+                yPos -= boxSize;
         }else if (e.getKeyCode() == KeyEvent.VK_DOWN){
-            if(yPos < 600)
-                yPos += 30;
+            if(yPos < bound)
+                yPos += boxSize;
         }
 
         coords.setText("xPos: " + xPos + "   yPos: " + yPos);
@@ -129,20 +151,20 @@ public class Grid extends JPanel implements KeyListener{
 
         JLabel rDistLabel = new JLabel("Render Distance");
         toolbox.add(rDistLabel);
-        JSlider rDist = new JSlider(JSlider.HORIZONTAL, 1, 8, 3);
-        rDist.setMajorTickSpacing(1);
-        rDist.setPaintTicks(true);
-        rDist.setPaintLabels(true);
-        toolbox.add(rDist);
+        JSlider distSlider = new JSlider(JSlider.HORIZONTAL, 1, 8, 3);
+        distSlider.setMajorTickSpacing(1);
+        distSlider.setPaintTicks(true);
+        distSlider.setPaintLabels(true);
+        toolbox.add(distSlider);
         
         JLabel boxSizeLabel = new JLabel("Box Size (px)");
         toolbox.add(boxSizeLabel);
-        JSlider boxSize = new JSlider(JSlider.HORIZONTAL, 10, 60, 30);
-        boxSize.setMajorTickSpacing(10);
-        boxSize.setMinorTickSpacing(5);
-        boxSize.setPaintTicks(true);
-        boxSize.setPaintLabels(true);
-        toolbox.add(boxSize);
+        JSlider boxSlider = new JSlider(JSlider.HORIZONTAL, 10, 60, 30);
+        boxSlider.setMajorTickSpacing(10);
+        boxSlider.setMinorTickSpacing(5);
+        boxSlider.setPaintTicks(true);
+        boxSlider.setPaintLabels(true);
+        toolbox.add(boxSlider);
 
         */
 
@@ -157,7 +179,9 @@ public class Grid extends JPanel implements KeyListener{
         //all.add(coords);
         all.add(grid);
 
-        frame.setSize(700, 1000);
+        frame.setBackground(Color.darkGray);
+        int limit = bound + (boxSize*2);
+        frame.setSize(limit, limit+boxSize);
         frame.addKeyListener(grid);
         frame.setContentPane(all);
         frame.setVisible(true);
