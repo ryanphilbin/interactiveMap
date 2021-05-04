@@ -4,25 +4,24 @@ import javax.swing.border.Border;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.util.Random;
 
 /* 
     The idea of this program is to visualize a players
     "render distance" on an interactive board.
 
-    Eventually, I want the user to be able to change:
-    - the user's render distance
-    - the size of the squares on the grid
+    I accomplished my original goal, building an 
+    interactive grid that displays render distance.
 
-    CURRENT ISSUES:
+    All aspects of the grid are configurable and scaled
+    properly.
 
-    Some boxSize's work better than others. Since it will
-    be dependent on user choice, only offer boxSize options 
-    in the toolbox that work well with program.
+    Would love to add more features in the future, making
+    the grid more interesting.
 
-    Next time, build start screen that gives allows user
-    to manipulate boxSize, renderDist, and gridSize. Then, 
-    on button click, paint the grid and allow user
-    interaction.
+    CURRENT ISSUES
+    - .json is needed to run inside VS Code on my machine. 
+      I would like to make it so the program can be run on any machine.
 */
 
 public class Grid extends JPanel implements KeyListener{
@@ -33,13 +32,16 @@ public class Grid extends JPanel implements KeyListener{
 
     // grid info
     public static int boxSize = 30; // creates boxes w/ size (30px x 30px)
-    public static int renderDist = 4; // creates radius of (renderDist) squares
-    public static int gridSize = 14; // creates grid with (gridSize x gridSize) squares
-    public static final int bound = boxSize * gridSize; // max x or y value for squares to be drawn
+    public static int renderDist = 4; // creates radius of (4) squares
+    public static int gridSize = 14; // creates grid with (14 x 14) squares
+    public static int bound; // max x or y value for squares to be drawn
 
     // uhh
-    public static JLabel coords;
-    public static JPanel panel;
+    public static JLabel coords; 
+    public static JButton button; // Build Grid button
+    public static JSlider distSlider;
+    public static JSlider boxSlider;
+    public static JSlider gridSlider;
 
     /* xPos and yPos hold the x and y coords of the square
        on the board in which the player is located.
@@ -55,24 +57,26 @@ public class Grid extends JPanel implements KeyListener{
 
     public void paintComponent(Graphics g) {
 
+        super.paintComponent(g);
+        
         //draw grid lines
-        for(int x = boxSize; x <= (bound + boxSize); x+= boxSize) {
-            g.drawLine(x, boxSize, x, (bound + boxSize));
+        for(int x = 0; x <= bound; x+= boxSize) {
+            g.drawLine(x+5, 0+5, x+5, bound+5);
         }
-        for(int y = boxSize; y <= (bound + boxSize); y += boxSize) {
-            g.drawLine(boxSize, y, (bound + boxSize), y);
+        for(int y = 0; y <= bound; y += boxSize) {
+            g.drawLine(0+5, y+5, bound+5, y+5);
         }
 
         // draw rectangles
-        for(int x = boxSize; x <= bound; x += boxSize) {
-            for(int y = boxSize; y <= bound; y += boxSize) {
+        for(int x = 0; x <= (bound - boxSize); x += boxSize) {
+            for(int y = 0; y <= (bound - boxSize); y += boxSize) {
 
                 if(shaded(x, y)){
                     g.setColor(Color.RED);
                 } 
                 else g.setColor(Color.WHITE);
                     
-                g.fillRect(x+1, y+1, boxSize-2, boxSize-2);
+                g.fillRect(x+1+5, y+1+5, boxSize-2, boxSize-2);
 
                 //if(x == xPos && y == yPos){
                     // draw player marker on top of red square
@@ -88,8 +92,8 @@ public class Grid extends JPanel implements KeyListener{
 
     public boolean shaded(int x, int y) {
         // this method determines wether a box needs to be shaded or not
-        int xDist = Math.abs(xPos - x);
-        int yDist = Math.abs(yPos - y);
+        int xDist = Math.abs( (xPos-5) - x);
+        int yDist = Math.abs( (yPos-5) - y);
 
         // going to use pythagorean to determine whether shading is needed
         xDist = xDist / boxSize; // conv xDist from 'px' to 'squares'
@@ -99,7 +103,7 @@ public class Grid extends JPanel implements KeyListener{
         double total = (double)xDist + (double)yDist; // calculate a^2 + b^2
         total = Math.sqrt(total); // square root
 
-        if(total <= renderDist) return true;
+        if(total <= (double)renderDist) return true;
         else return false;
 
     }
@@ -107,7 +111,7 @@ public class Grid extends JPanel implements KeyListener{
     @Override
     public void keyPressed(KeyEvent e) {
         if(e.getKeyCode() == KeyEvent.VK_RIGHT) {
-            if(xPos < bound)
+            if(xPos < (bound-boxSize))
                 xPos += boxSize;
         }else if (e.getKeyCode() == KeyEvent.VK_LEFT){
             if(xPos > boxSize)
@@ -116,7 +120,7 @@ public class Grid extends JPanel implements KeyListener{
             if(yPos > boxSize)
                 yPos -= boxSize;
         }else if (e.getKeyCode() == KeyEvent.VK_DOWN){
-            if(yPos < bound)
+            if(yPos < (bound-boxSize))
                 yPos += boxSize;
         }
 
@@ -136,72 +140,155 @@ public class Grid extends JPanel implements KeyListener{
         
     }
 
-    public static void createWindow(JFrame frame) {
-
-        // create panel to hold everything
-        JPanel all = new JPanel();
-        GridLayout layout = new GridLayout(1, 1, 15, 20);
-        all.setLayout(layout);
-        
-        /*
+    public static void displayToolbox(JFrame frame) {
 
         // create top panel to hold tools
         JPanel toolbox = new JPanel();
-        toolbox.setLayout(new FlowLayout());
-
-        JLabel rDistLabel = new JLabel("Render Distance");
+        BoxLayout griddy = new BoxLayout(toolbox, BoxLayout.Y_AXIS);
+        toolbox.setLayout(griddy);
+        toolbox.setBackground(Color.LIGHT_GRAY);
+        Border border = BorderFactory.createLineBorder(Color.BLACK);
+        
+        JTextArea area = new JTextArea();
+        area.setLineWrap(true);
+        String intro = "\t     Hello!\n" 
+        + "     Customize the settings below and "
+        + "click\n \"Create Grid\" to build your "
+        + "interactive graph";
+        area.setText(intro);
+        area.setFont(new Font("Times New Roman", Font.PLAIN, 20));
+        area.setEditable(false);
+        area.setBackground(Color.LIGHT_GRAY);
+        area.setBorder(border);
+        toolbox.add(area);
+        
+        
+        // render distance slider and label
+        JLabel rDistLabel = new JLabel("User Render Distance in squares");
+        rDistLabel.setHorizontalAlignment(SwingConstants.CENTER);
         toolbox.add(rDistLabel);
-        JSlider distSlider = new JSlider(JSlider.HORIZONTAL, 1, 8, 3);
+        distSlider = new JSlider(JSlider.HORIZONTAL, 1, 8, 3);
         distSlider.setMajorTickSpacing(1);
         distSlider.setPaintTicks(true);
         distSlider.setPaintLabels(true);
-        toolbox.add(distSlider);
+        JPanel slider1 = new JPanel();
+        slider1.setLayout(new FlowLayout());
+        slider1.add(distSlider);
+        toolbox.add(slider1);
         
-        JLabel boxSizeLabel = new JLabel("Box Size (px)");
+        // box size slider and label
+        JLabel boxSizeLabel = new JLabel("Edge Length of 1 Grid Square(px)");
+        boxSizeLabel.setHorizontalAlignment(SwingConstants.CENTER);
         toolbox.add(boxSizeLabel);
-        JSlider boxSlider = new JSlider(JSlider.HORIZONTAL, 10, 60, 30);
+        boxSlider = new JSlider(JSlider.HORIZONTAL, 10, 40, 30);
         boxSlider.setMajorTickSpacing(10);
         boxSlider.setMinorTickSpacing(5);
+        boxSlider.setSnapToTicks(true);
         boxSlider.setPaintTicks(true);
         boxSlider.setPaintLabels(true);
-        toolbox.add(boxSlider);
+        JPanel slider2 = new JPanel();
+        slider2.setLayout(new FlowLayout());
+        slider2.add(boxSlider);
+        toolbox.add(slider2);
 
-        */
+        // gridSize slider and label
+        JLabel gridSizeLabel = new JLabel("Grid Size (n x n) squares");
+        gridSizeLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        toolbox.add(gridSizeLabel);
+        gridSlider = new JSlider(JSlider.HORIZONTAL, 5, 20, 14);
+        gridSlider.setMajorTickSpacing(5);
+        gridSlider.setMinorTickSpacing(1);
+        gridSlider.setSnapToTicks(true);
+        gridSlider.setPaintTicks(true);
+        gridSlider.setPaintLabels(true);
+        JPanel slider3 = new JPanel();
+        slider3.setLayout(new FlowLayout());
+        slider3.add(gridSlider);
+        toolbox.add(slider3);
 
-        // create grid for bottom panel 
-        Grid grid = new Grid();
+        // Build Grid Button
+        button = new JButton();
+        button.setText("Create Grid");
+        button.setSize(75, 50);
+        JPanel button1 = new JPanel();
+        button1.setLayout(new FlowLayout());
+        button1.add(button);
+        toolbox.add(button1);
+
+        // set frame for display
+        frame.setSize( 300 , 350 );
+        frame.setResizable(false);
+        frame.setTitle("Build a Grid");
+        frame.setContentPane(toolbox);
+        frame.setVisible(true);
+
+    }
+
+    public static void createWindow(JFrame frame) {
+
+        // set initial player position to a random spot on the board
+        Random rand = new Random();
+        xPos = rand.nextInt(gridSize); // 0 to gridSize-1
+        xPos = (xPos * boxSize) + 5; // convert grid coord to px
+        yPos = rand.nextInt(gridSize);
+        yPos = (yPos * boxSize) + 5;
+        
+        // create panel to hold everything
+        JPanel all = new JPanel();
+        GridLayout layout = new GridLayout(1, 2, 15, 20);
+        all.setLayout(layout);
+        all.setBackground(Color.DARK_GRAY);
+
+        // mark pixel coordinates 
         coords = new JLabel();
         coords.setText("xPos: " + xPos + "   yPos: " + yPos);
         coords.setPreferredSize(new Dimension(20, 50));
-        Border border = BorderFactory.createLineBorder(Color.BLACK);
-        coords.setBorder(border);
 
-        //all.add(coords);
+        // create grid for bottom panel 
+        Grid grid = new Grid();
+        int limit = boxSize * gridSize;
+        limit += (boxSize+30);
+        grid.setMinimumSize(new Dimension(limit, limit));
+        grid.setBackground(Color.DARK_GRAY);
+
+        // add panels to the parent panel
         all.add(grid);
+        all.setSize(grid.getMinimumSize());
 
-        frame.setBackground(Color.darkGray);
-        int limit = bound + (boxSize*2);
-        frame.setSize(limit, limit+boxSize);
-        frame.addKeyListener(grid);
+        // add parent panel to frame and display
+        frame.setResizable(true);
+        frame.setSize(all.getSize());
+        frame.addKeyListener(grid); // create key listener for grid
+        frame.requestFocus();
+        frame.setTitle("Grid Display");
         frame.setContentPane(all);
         frame.setVisible(true);
     }
 
 
     public static void main(String[] args) throws Exception {
-        JFrame frame = new JFrame("Map Application");
+        JFrame frame = new JFrame();
+        frame.setBackground(Color.darkGray);
+        
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         
-        // set initial player position
-        xPos = 150; yPos = 150;
-        
-        createWindow(frame);
-        
 
+        // display toolbox panel, on 'Run' button click
+        displayToolbox(frame);
+        button.addActionListener(e -> {
+            boxSize = boxSlider.getValue();
+            renderDist = distSlider.getValue();
+            gridSize = gridSlider.getValue(); // for when I build this
+            bound = boxSize * gridSize;
+            createWindow(frame);
+        });//end lambda function
 
+        // I may have it so button on 1st screen runs this
+        // function, which changes setContentPane()
+        // createWindow(frame);
         
-
+        
     }
 
     
