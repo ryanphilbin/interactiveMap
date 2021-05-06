@@ -38,6 +38,7 @@ public class Grid extends JPanel implements KeyListener{
 
     // uhh
     public static JLabel coords; 
+    public static JLabel squares;
     public static JButton button; // Build Grid button
     public static JSlider distSlider;
     public static JSlider boxSlider;
@@ -67,7 +68,7 @@ public class Grid extends JPanel implements KeyListener{
             g.drawLine(0+5, y+5, bound+5, y+5);
         }
 
-        // draw rectangles
+        // draw grid squares
         for(int x = 0; x <= (bound - boxSize); x += boxSize) {
             for(int y = 0; y <= (bound - boxSize); y += boxSize) {
 
@@ -125,6 +126,7 @@ public class Grid extends JPanel implements KeyListener{
         }
 
         coords.setText("xPos: " + xPos + "   yPos: " + yPos);
+        squares.setText("x: " + (xPos - 5) / boxSize + "   ySq: " + (yPos - 5) / boxSize);
         repaint();
     }
 
@@ -235,34 +237,72 @@ public class Grid extends JPanel implements KeyListener{
         
         // create panel to hold everything
         JPanel all = new JPanel();
-        GridLayout layout = new GridLayout(1, 2, 15, 20);
+        BoxLayout layout = new BoxLayout(all, BoxLayout.Y_AXIS);
         all.setLayout(layout);
-        all.setBackground(Color.DARK_GRAY);
+        all.setBackground(Color.LIGHT_GRAY);
+
+        JPanel lower = new JPanel();
+        BoxLayout lowLay = new BoxLayout(lower, BoxLayout.X_AXIS);
+        lower.setLayout(lowLay);
+        lower.setBackground(Color.LIGHT_GRAY);
 
         // mark pixel coordinates 
         coords = new JLabel();
         coords.setText("xPos: " + xPos + "   yPos: " + yPos);
         coords.setPreferredSize(new Dimension(20, 50));
+        // Create another label beside coords to display square numbers:
+        //      (0 to gridSize - 1) or (1 to gridSize)
+        
+        squares = new JLabel();
+        squares.setText("x: " + (xPos - 5) / boxSize + "   ySq: " + (yPos - 5) / boxSize);
+
+        JButton backBut = new JButton();
+        backBut.setText("< Back");
+        // This button should call a new method that changes the contentPane for
+        // frame and clears the current grid if necessary. Repainting might be 
+        // enough. Frame size will need to be manipulated as well.
+        backBut.addActionListener(e -> {
+            displayToolbox(frame);
+        });
+
+        JLabel space = new JLabel();
+        space.setText("           ");
+        JLabel space2 = new JLabel();
+        space2.setText("           ");
+
+        lower.add(backBut);
+        lower.add(space);
+        lower.add(squares);
+        lower.add(space2);
+        lower.add(coords);
+        //lower.setSize( ( backBut.getWidth() + coords.getWidth() + 50) , ( backBut.getHeight() ) );
 
         // create grid for bottom panel 
         Grid grid = new Grid();
         int limit = boxSize * gridSize;
-        limit += (boxSize+30);
-        grid.setMinimumSize(new Dimension(limit, limit));
+        limit += (boxSize+50);
+        grid.setMinimumSize(new Dimension(limit, limit+50));
         grid.setBackground(Color.DARK_GRAY);
 
         // add panels to the parent panel
         all.add(grid);
-        all.setSize(grid.getMinimumSize());
+        all.add(lower);
+        all.setMinimumSize(grid.getMinimumSize());
 
         // add parent panel to frame and display
         frame.setResizable(true);
-        frame.setSize(all.getSize());
+        frame.setSize(all.getMinimumSize());
         frame.addKeyListener(grid); // create key listener for grid
         frame.requestFocus();
         frame.setTitle("Grid Display");
         frame.setContentPane(all);
         frame.setVisible(true);
+    }
+
+    public static void goBack() {
+        // this method handles the process of "going back" from
+        // the grid window, back to the toolBox menu.
+        
     }
 
 
